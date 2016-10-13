@@ -53,3 +53,35 @@ If LudProxy receives a request for which it contains a stale copy in its cache, 
 
 ### Semantic support for HTTP HEAD
 LudProxy understands the meaning of the HTTP HEAD method. It uses its cache to  generate responses to such requests (based on earlier GET responses). It can also use responses to HEAD request to invalidate matching GET responses stored in its cache.
+
+## The GUI interface
+### The *Wstęp* tab
+The first tab contains information about server's address and port (which should be set in the client's proxy configuration).
+
+### The *Cache* tab
+A table containing all elements currently stored in cache. The table includes information about element's URL, its age and freshness (which determines whether an element will be sent to a browser straight from the cache).
+There are two buttons available underneath the table: "odśwież listę" (*refresh the list*) and "wyczyść cache" (*clear the cache*).
+
+### The *Połączenia* (*Connections*) tab
+#### The table
+The table contains information about all connection with servers, from the moment LudProxy started. The table contains the following data:
+* ID of a thread that performed the connection
+* URL of the requested resource
+* HTTP status code of the server response
+* MIME type of the received resource
+* Did LudProxy sent a conditional request (and if so: what was the result)
+* The size of the response
+* "Delay" i.e. time that passed between end of the request and beginning of the response
+
+#### The map
+The "Połączenia" (*Connections*) tab also contains a world map. Each line on the map symbolizes a sum of all connection with a particular server.
+
+The **thickness** of a line is determined by the sum of all data received during the communication with a server. It starts as 1px, but every 50kb of received data adds another 1px to the thickness. 10px is the maximum thickness.
+
+The **color** of a line is determined by the average delay during the communication with a particular server. The hue goes smoothly from turquoise (delay values close to 0 ms) to green, yellow and ends with red (values close to 500 ms and more).
+
+If users highlights a connection (or multiple connections) in the table, the program highlights corresponding lines on the map. Other lines become "grayed out" and the highlighted lines get additional labels containing addresses of servers (white) and routers that take part in the connection (gray). The routers are identified using the traceroute command.
+
+*Note:* even though the program supports both Unix *traceroute* and Windows *tracert* commands, it is not possible to tell if it fully works with all versions and implementations of those commands without a lot more testing. The software was tested on Mac OS X 10.7 Lion, Ubuntu 10.04 Lucid Lynx (after installation of the "traceroute" packet) and Windows 7.
+
+![The GUI](https://raw.githubusercontent.com/ludwiktrammer/ludproxy/master/screenshot.png)
