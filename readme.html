@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LudProxy</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+h1 {
+    font-size:50px;
+    margin:0;
+}
+
+h2 {
+    font-size:30px;
+    margin-top:70px;
+    margin-bottom:0;   
+}
+
+.docs {
+    font-weight: bold;
+    text-align:center;
+    margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+<h1>LudProxy</h1>
+<h2>Uruchamianie</h2>
+<p>Program można uruchomić wpisując polecenie:</p>
+
+<code>java -jar ludproxy.jar</code>
+
+<p>Program opcjonalnie przyjmuje jako argumenty wywołania adres interfejsu na którym ma nasłuchiwać oraz numer portu do nasłuchu. Na przykład aby nasłuchiwać na lokalnym porcie 5000 należy wydać polecenie:</p>
+
+<code>java -jar ludproxy.jar localhost 5000</code>
+
+<p>Dodatkowo program obsługuje następujące przełączniki:</p>
+
+<p><strong>--quiet</strong> informacje o działaniu programu nie są wypisywane na wyjście standardowe (jednak informacje o błędach nadal trafiają na wyjście błędów)</p>
+
+<p><strong>--no-gui</strong> program uruchamiany jest bez okna graficznego interfejsu użytkownika. W tym trybie program wykonuje wyłącznie funkcjonalność proxy, nie generując dodatkowych zapytań niezbędnych do obsługi funkcji obecnych w GUI takich jak geolokacja i traceroute.</p>
+
+
+<h2>Proxy</h2>
+<p><strong>Obsługa trwałych połączeń z klientem</strong><br>
+LudProxy wymusza nietrwałe połączenia z zewnętrznymi serwerami, ale obsługuje <b>trwałe połączenia z klientem</b>. Dla tych połączeń posiada również wsparcie <b>pipelingu</b> (czyli zgadza się aby serwer wysyłał kolejne zapytania zanim dostanie na nie odpowiedzi).<br>
+Częścią technologii umożliwiającej obsługę trwałych połączeń jest obsługa <b>Transfer Encoding typu “chunked”</b>. LudProxy potrafi nie tylko skutecznie odczytywać zapisane w ten sposób wiadomości, ale również samemu nakładać takie encoding w locie (co bywa konieczne gdy trzeba przesłać przez trwałe połączenie wiadomość przygotowaną przez serwer do przesłania przez połączenie nietrwałe, gdzie precyzyjne określenie końca wiadomości w sposób inny niż zakończenie połączenia nie było specjalnie istotne).</p>
+
+<p><strong>Dodawanie/usuwanie nagłówków</strong><br>
+Do wszystkich przekazywanych wiadomości LudProxy dodaje <b>nagłówek “Via”</b> z informacją o swoim hoście i protokole (lub dopisuje się do informacji w już istniejącym nagłówku Via) oraz <b>nagłówek Age</b> z informacją o jej wieku (zgodną z definicją z RFC).<br>
+<b>Usuwa za to wszystkie nagłówki typu “Hop-By-Hop”</b> (czyli takie, które dotyczą tylko bezpośrednio połączenia między dwoma maszynami), dodając własne tam gdzie jest to potrzebne (to drugie dotyczy głównie nagłówków Connection i Transfer-Encoding).<br>
+LudProxy obsługuje również <b>“Trailing Headers”</b>, czyli takie nagłówki, które przesyłane są już po przesłaniu ciała wiadomości (mogę one występować przy Transfer-Encoding typu “chunked”).</p>
+
+<p><strong>Generowanie informacji o błędach</strong><br>
+W przypadku braku możliwości otrzymania odpowiedzi od serwera (np. nieznany adres serwera, nieudane połączenie, błędny format nagłówka HTTP) LudProxy <b>generuje odpowiedź</b> do klienta o odpowiednim numerze błędu (z puli 4xx lub 5xx). Odpowiedź zawiera <b>przyjazną stronę</b> informującą o szczegółach błędu i zawierającą informacje diagnostyczne (nagłówki zapytania i odpowiedzi).<br>
+Przykładową stronę błędu najłatwiej zobaczyć wpisująć do przeglądarki nieistniejącą domenę.</p>
+
+<p><strong>Przechwytywanie wyjątków</strong><br>
+Również wszystkie nie obsługiwane wyjątki, które mogą pojawić się w wątku obsługi połączenia są automatycznie przechwytywane, a <b>klient informowany jest o nich</b> poprzez błąd 500 (“Internal Server Error”). Strona informacyjna towarzysząca błędowi zawiera m.in. informacje o wyjątku Java.</p>
+
+<h2>Cache</h2>
+
+<p><strong>Obsługa komend z nagłówka Cache-Control</strong><br>
+LudProxy respektuje następujące polecenia z nagłówka Cache-Control: <b>no-cache, no-store, private, must-revalidate, max-age, min-fresh, max-stale</b> oraz dodatkowo nagłówki <b>“Pragma”</b> i <b>“Expires”</b>.<br>
+“Świeżość” elementu znalezionego w cache obliczana jest na podstawie algorytmów obliczania wieku i świeżości pochodzących z RFC 2616.</p>
+
+<p><strong>Obsługa zapytań warunkowych</strong><br>
+Zapytania warunkowe wykorzystywane są przez LudProxy zarówno w komunikacji z klientem jak i w komunikacji z serwerem.
+Jeśli LudProxy posiada w cache odpowiedź, która jest nadal świeża i otrzymuje od klienta zapytanie warunkowe (czyli posiadające nagłówek If-Match i/lub If-Modified-Since) i jeśli warunek opisany w nagłówkach się zgadza, <b>samodzielnie udziela odpowiedzi 304 Not Modified</b> (a jeśli warunek się nie zgadza to oczywiście również samodzielnie udziela odpowiedzi 200, wraz z treścią pochodzącą z cache).<br>
+Jeśli LudProxy otrzyma zapytanie o treść, którą posiada w cache, ale która jest już nieświeża <b>wysyła do serwera zapytanie warunkowe</b> (zawierające If-Match i/lub If-Modified-Since) i zależnie od udzielonej odpowiedzi wysyła klientowi wersję z cache, lub nowootrzymaną od serwera.</p>
+
+<p><strong>Przechowywanie cache na dysku</strong><br>
+Zawartość cache przechowywania jest na dysku twardym komputera. Oznacza to, że w pamięci operacyjnej znajdują się tylko te <b>elementy z cache, które są aktualnie wykorzystywane</b>. Zawartość cache <b>zapamiętywana jest pomiędzy uruchomieniami programu</b> (choć nie jest to gwarantowane, bo program przechowuje pliki cache w systemowym katalogu tymczasowym - żeby zanadto nie śmiecić).<br>
+Do mechanizmu związanego z tą funkcjonalnością wykorzystano bibliotekę <a href="http://code.google.com/p/jdbm2/">JDBM 2</a>.</p>
+
+<p><strong>Obsługa semantyczna metody HEAD</strong><br>
+LudProxy rozumie znaczenie metody HEAD, potrafi więc generować odpowiedzi na takie zapytania z cache (na podstawie zapamiętanych wcześniej odpowiedzi na zapytania GET). Potrafi również wykorzystać odpowiedzi przez siebie odpowiedzi na zapytania HEAD do wykrycia nie aktualności elementów przechowywanych we własnym cache. <b>Nie do końca wiadomo po co</b>, bo HEAD nie jest zbyt popularną metodą.</p>
+
+<h2>Okno Programu</h2>
+
+<p><strong>Karta “Wstęp”</strong><br>
+Pierwsza karta zawiera informacje o <b>adresie i porcie</b> serwera, które należy wpisać w konfiguracji przeglądarki.</p>
+
+<p><strong>Karta “Cache”</strong><br>
+Tabela zawierająca wszystkie <b>elementy przechowywane w danym momencie w cache</b>. W tabeli podawany jest m.in. URL elementu, jego wiek i świeżość (od której zależy to czy element zostanie wysłany do przeglądarki bezpośrednio z cache).<br>
+Pod tabelą znajdują się przycisk “odśwież listę” (aktualizujący tabelę do bieżącego stanu cache programu) oraz przycisk “wyczyść cache” (usuwający z pamięci cache wszystkie zapisane do tej pory elementy).</p>
+
+<p><strong>Karta “Połączenia”: Tabela</strong><br>
+W tabeli znajdują się informacje o <b>wszystkich połączeniach</b> z serwerami od momentu uruchomienia programu (lub od momentu wyczyszczenia listy przez użytkownika przy pomocy przycisku “wyczyść listę połączeń). W tabeli prezentowane są następujące dane:
+<ul>
+<li>Numer wątku, który obsługiwał dane połączenie</li>
+<li>URL otrzymanego zasobu</li>
+<li>Kod statusu odpowiedzi serwera</li>
+<li>Typ MIME otrzymanego zasobu </li>
+<li>Czy LudProxy wysłał zapytanie do serwera jako zapytanie warunkowe, a jeśli tak jaki był tego rezultat</li>
+<li>Ilość otrzymanych danych (liczone są tylko dane w ciele otrzymanej wiadomości)</li>
+<li>“Opóźnienie”, czyli czas, który upłynął od zakończenia wysyłania zapytania do rozpoczęcia odbierania odpowiedzi.</li>
+</ul></p>
+
+<p><strong>Karta “Połączenia”: Mapa</strong><br>
+Każda linia narysowana na mapie symbolizuje <b>sumę wszystkich połączeń</b> wykonanych z danym serwerem.<br>
+<b>Grubość linii</b> zależy od sumy ilości danych, które zostały otrzymwane w komunikacji z serwerem. Bazowo jest to 1px, każde pełne 50kb otrzymanych danych zwiększa grubość o dodatkowe 1px.  Maksymalna grubość to 10px.<br>
+<b>Kolor linii</b> zależy od średniego opóźnienia w komunikacji z serwerem. Barwa płynnie przechodzi  od koloru turkusowego (wartości zbliżone do 0 ms), przez zielony i żółty aż do czerwonego (wartości w okolicach 500ms i więcej).<br>
+Jeśli w tabeli pod mapą zostanie zaznaczone jedno lub więcej połączeń to na mapie <b>wyróżniona zostanie komunikacja z zaznaczonymi serwerami</b>. Pozostałe linie zostaną "wyszarzone", a do wyróżnionych linii dodatkowo dodane zostaną etykiety komputerów na krańcach połączeń (na biało) oraz routerów biorących udział w przekazywaniu wiadomości (na szaro). Aby "odznaczyć" wszystkie połączenia należy kliknąć na mapę.<br>
+Na początku na mapie rysowane są bezpośrednie połączenia między dwoma komputerami, a <b>następnie wywoływane jest polecenie “traceroute”</b> i po uzyskaniu jego wyników mapa jest odpowiednio aktualizowana.<br>
+Uwaga: Choć program wspiera zarówno Uniksowie traceroute jak i Windowsowe tracert to bez przeprowadzenia szerszych testów nie da się stwierdzić czy poprawnie wpsółpracuje ze wszystkimi wersjami i implementacjami tych poleceń. Program był z powodzeniem testowany pod Mac OS X 10.7 Lion, Ubuntu 10.04 Lucid Lynx (po doinstalowaniu pakietu "traceroute") i pod Windowsem 7.
+</p>
+
+<div class="img">
+<img src="screenshot.png" alt="Okno programu">
+</div>
+
+<div class="docs">Więcej informacji w tym opisy działania klas i metod <a href="docs/index.html">znajduje się w Java Docs projektu</a></div>
+</body>
+</html>

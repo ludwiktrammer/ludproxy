@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Error {0}: {1}</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">'
+body {
+    font-family: Helvetica, Arial, Verdana, sans-serif;
+}
+
+.top {
+    font-style:italic;
+}
+
+.title {
+    font-weight:bold;
+    font-size:13px;   
+}
+
+.more_info {
+    width:600px;
+    background-color:#FFEFC6;
+    padding:10px;
+    border-radius:8px;
+    box-shadow: 2px 2px 5px #ccc;
+    font-style:italic;
+    margin:10px 0 30px 0;     
+}
+
+pre {
+    background-color:#eee;
+    width:600px;
+    padding:10px;
+    margin:10px 0 30px 0;
+    border:1px dashed #ccc;
+    overflow:auto;     
+}
+
+.content {
+    width:620px;
+    margin:0 auto;    
+}
+
+.footer hr {
+    border:0;
+    background-color:#ccc;
+    height:1px;
+    max-width:800px;
+}
+
+.footer {
+    font-size:13px;
+    text-align:center;
+    color:#666;
+}
+'</style>
+</head>
+<body>
+<div class="content">
+    <div class="top">LudProxy ma zaszczyt przedstawić…</div>
+    <h1>Error {0}<!-- error_code -->: {1}<!-- error_desc --></h1>
+    
+    <div class="title">Szczegóły problemu:</div>
+    <div class="more_info">
+        <div class="message">{2}<!-- error_msg --></div>
+    </div>
+    
+    <div class="headers">
+        <div class="title">Nagłówek zapytania w momencie wystąpienia błędu:</div>
+        <pre class="header">{3}<!-- requestHeader --></pre>
+
+        <div class="title">Nagłówek odpowiedzi w momencie wystąpienia błędu:</div>
+        <pre class="header">{4}<!-- responseHeader --></pre>
+    </div>
+</div>
+<div class="footer">
+<hr>
+Strona wygenerowana automatycznie {5,date,yyyy-MM-dd 'o' HH:mm:ss}<!-- date --> przez LudProxy.
+</div>
+</body>
+</html>
