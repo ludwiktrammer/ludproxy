@@ -85,3 +85,6 @@ If users highlights a connection (or multiple connections) in the table, the pro
 *Note:* even though the program supports both Unix *traceroute* and Windows *tracert* commands, it is not possible to tell if it fully works with all versions and implementations of those commands without a lot more testing. The software was tested on Mac OS X 10.7 Lion, Ubuntu 10.04 Lucid Lynx (after installation of the "traceroute" packet) and Windows 7.
 
 ![The GUI](https://raw.githubusercontent.com/ludwiktrammer/ludproxy/master/screenshot.png)
+
+## Further reading
+You can learn more technical details about the project from [its Javadoc documentation](https://ludwiktrammer.github.io/ludproxy/). Note however that while class, mehod and argument names are in English, all descriptions are written in Polish.
